@@ -15,6 +15,8 @@ If RotorMachine is going to be used from another file (to use the two encryption
 a class for the rotor machine may be needed
 """
 
+# TODO parse input/plaintext, remove spaces if any
+
 # TODO Initial configuration of the 3 rotors numbers from 0-25 each with a unique order
 
 
@@ -103,7 +105,7 @@ in the position after the encryption of all the characters.
 
 
 pt = "JAZZ"
-
+print(pt)
 # encrypt(pt,"ABC")
 
 
