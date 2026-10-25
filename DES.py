@@ -1,64 +1,150 @@
 #Python 3.14
 
-# TODO Step 1 permutation of plaintext using initial 8x8 64 bit permutation table
-""""
-Initial Permutation Table
+# Data -----------------------------------------------
+# Initial Permutation Table
+IP_table = [    58, 50, 42, 34, 26, 18, 10, 2,
+				60, 52, 44, 36, 28, 20, 12, 4,
+				62, 54, 46, 38, 30, 22, 14, 6,
+				64, 56, 48, 40, 32, 24, 16, 8,
+				57, 49, 41, 33, 25, 17,  9, 1,
+				59, 51, 43, 35, 27, 19, 11, 3,
+				61, 53, 45, 37, 29, 21, 13, 5,
+				63, 55, 47, 39, 31, 23, 15, 7]
 
-58	50	42	34	26	18	10	2
-60	52	44	36	28	20	12	4
-62	54	46	38	30	22	14	6
-64	56	48	40	32	24	16	8
-57	49	41	33	25	17	9	1
-59	51	43	35	27	19	11	3
-61	53	45	37	29	21	13	5
-63	55	47	39	31	23	15	7
+PC1_table = [   57, 49, 41, 33, 25, 17,  9,
+                1,  58, 50, 42, 34, 26, 18,
+                10, 2,  59, 51, 43, 35, 27,
+                19, 11, 3,  60, 52, 44, 36,
+                63, 55, 47, 39, 31, 23, 15,
+                7,  62, 54, 46, 38, 30, 22,
+                14, 6,  61, 53, 45, 37, 29,
+                21, 13,  5, 28, 20, 12,  4]
 
-"""
-
-# TODO Step 2 initial process of 64-bit key
-"""
-Need to take out 8 parity bits
-Using PC-1 table
-Left half	|57 49 41 33 25 17 9  1	|58 50 42 34 26 18 10 2	|59 51 43 35 27 19 11 3 |60 52 44 36                       
-Right half	|63 55 47 39 31 23 15 7	|62 54 46 38 30 22 14 6	|61 53 45 37 29 21 13 5 |28 20 12 4
-
-Split remaining 56 bits in half 28 bits
-"""
-PC1_LEFT = [
-    57, 49, 41, 33, 25, 17,  9,
-    1,  58, 50, 42, 34, 26, 18,
-    10, 2,  59, 51, 43, 35, 27,
-    19, 11, 3,  60, 52, 44, 36
-]
-
-PC1_RIGHT = [
-    63, 55, 47, 39, 31, 23, 15,
-    7,  62, 54, 46, 38, 30, 22,
-    14, 6,  61, 53, 45, 37, 29,
-    21, 13, 5,  28, 20, 12, 4
-]
-
-# TODO function to process 2 halves each round
+PC2_table = [   14, 17, 11, 24,  1,  5,
+                 3, 28, 15,  6, 21, 10,
+                23, 19, 12,  4, 26,  8,
+                16,  7, 27, 20, 13,  2,
+                41, 52, 31, 37, 47, 55,
+                30, 40, 51, 45, 33, 48,
+                44, 49, 39, 56, 34, 53,
+                46, 42, 50, 36, 29, 32]
 """
 For each round bits of key are shifted
 1-bit shift rounds: Rounds 1, 2, 9, and 16
 2-bit shift rounds: Rounds 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, and 15
-shits made on keys are cumulative, next round will use previous rounds shifted halves
-
-combine halves into 56-bit string and drop 8 bits to create 48-bit key for this round  
-PC-2 Table
-14  17  11  24   1   5
-3   28  15   6  21  10
-23  19  12   4  26   8
-16   7  27  20  13   2
-41  52  31  37  47  55
-30  40  51  45  33  48
-44  49  39  56  34  53
-46  42  50  36  29  32
-
-and use the remaining 56 to create 16 unique 48 bit keys for each round
-
 """
+shifts_per_round = [ 1, 1, 2, 2,
+                     2, 2, 2, 2,
+                     1, 2, 2, 2,
+                     2, 2, 2, 1]
+#-----------------------------------
+
+# Helper Functions------------------
+def hex_to_bin(hexadecimal: str)-> str:
+    # could be with a dictionary mapping each hexadecimal character to binary equivalent
+    return bin(int(hexadecimal, 16))[2:].zfill(len(hexadecimal) * 4)
+
+# Core cryptographic techniques--------
+""" Permutation Function
+Parameters:
+    block : str - string that will be permutated using a table from Data section
+    table : list - a sequence of numbers used for permutation
+    bits : int - how many bits does the result need to have
+Returns:
+    permutated_block : str - block that passed through permutation table 
+"""
+def permutation(block : str,table: list,bits):
+    permutated_block = ""
+    for i in range(0,bits):
+        permutated_block = permutated_block + block[table[i]-1]
+    return permutated_block
+
+
+# TODO Substitution function using eight S‑boxes
+
+#----------------------------------------
+
+# TODO Step 1 permutation of plaintext using initial 8x8 64 bit permutation table
+
+
+
+
+# Step 2 initial process of 64-bit key
+"""
+Need to take out 8 parity bits
+Using PC-1 table
+Split remaining 56 bits in half 28 bits
+create 16 subkeys by using PC-2 table
+"""
+
+""" Key class
+Parameters:
+    key : str - 16 character string
+
+class validates key, by checking there isn't a letter not in hexadecimal
+or not exactly 16 characters in length. uses default key any of these checks fail. 
+"""
+class Key:
+    def __init__(self, key: str):
+        # validate
+        if self.validate(key):
+            self.key = key
+        else:
+            # default key
+            print("key was not valid, using default key")
+            self.key = "1337BACEF18CC54D"
+
+    def __shift_subkey(self,subkey: str,amount: int):
+        shift = ""
+        for i in range(0,amount):
+            for j in range(0,len(subkey)):
+                shift = shift + subkey[j]
+            shift = shift + subkey[0]
+            subkey = shift
+            shift = ""
+        return subkey
+
+    def validate(self,key) -> bool:
+        if len(key) != 16:
+            return False
+        try:
+            int(key, 16)
+        except ValueError:
+            return False
+        return True
+
+    def subkeys(self) -> list:
+        # create keys for the 16 rounds of encryption/dedcryption
+
+        # convert key to binary
+        bin_key = hex_to_bin(self.key)
+        # remove parity bits
+        no_parity_key = permutation(bin_key, PC1_table, 56)
+        # print(no_parity_key, len(no_parity_key))
+        half = int(len(no_parity_key) / 2)
+        # split in half
+        left = no_parity_key[0:half]
+        right = no_parity_key[half:56]
+        subkeys_list = []
+        for i in range(0,16):
+            # shift operations based on round
+            left = self.__shift_subkey(left,i)
+            right = self.__shift_subkey(right,i)
+            combine = left + right
+            subkey = permutation(combine, PC2_table, 48)
+            subkeys_list.append(subkey)
+        return subkeys_list
+
+# Key generation test-------
+valid_key = "133759BBC356F11D"
+invalid_key = "23F"
+subkeys = Key(valid_key).subkeys()
+count = 1
+for s in subkeys:
+    print(s,count)
+    count += 1
+# ---------------------------
+
 
 # TODO Feistel structure
 """
@@ -85,7 +171,3 @@ permutation/slice of 56 bit key generated, they should alternate. Use mod 2 == 0
 
 
 
-# TODO Permutation function using a P‑box
-
-
-# TODO Substitution function using eight S‑boxes
