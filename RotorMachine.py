@@ -21,6 +21,11 @@ rotor_1 = [2, 3, 4, 1, 0]
 rotor_2 = [3,1,2,0,4]
 rotor_3 = [4,3,1,2,0]
 
+# Real cylinders: 26 numbers each (0-25)
+rotor_1 = [4, 10, 12, 5, 11, 6, 3, 16, 21, 25, 13, 19, 14, 22, 24, 7, 23, 20, 18, 15, 0, 8, 1, 17, 2, 9]
+rotor_2 = [0, 9, 3, 10, 18, 8, 17, 20, 23, 1, 11, 7, 22, 19, 12, 2, 16, 6, 25, 13, 15, 24, 5, 21, 14, 4]
+rotor_3 = [1, 3, 5, 7, 9, 11, 2, 15, 17, 19, 23, 21, 25, 13, 24, 4, 8, 22, 6, 0, 10, 12, 20, 18, 16, 14]
+
 """
 rotors have lists of numbers
 I don't need the relationship list, they relate directly by position/index
@@ -109,6 +114,9 @@ class RotorMachine:
     def encrypt(self, plaintext: str, key : str):
         ciphertext = ""
 
+        cylinder1, offset1 = self.configure_rotor(self.rotors[0], key[0])
+        cylinder2, offset2 = self.configure_rotor(self.rotors[1], key[1])
+        cylinder3, offset3 = self.configure_rotor(self.rotors[2], key[2])
 
         """
         the first letter in each rotor should match key before executing this function    
@@ -125,8 +133,49 @@ class RotorMachine:
             ciphertext += cipher_char
             rotate forward all cylinders + 1
             """
+            if letter == " ":
+                ciphertext += letter
+                continue
+
+            valueofLetter = alpha_to_value.get(letter)
+            value_c1 = cylinder1[valueofLetter]
+            value_c2 = cylinder2[value_c1]
+            value_c3 = cylinder3[value_c2]
+            cipher_char = value_to_alpha.get(value_c3)
+            ciphertext += cipher_char
+
+            # rotate forward all cylinders + 1 (Horeb's rotate_forward)
+            cylinder1 = self.rotate_forward(cylinder1)
+            cylinder2 = self.rotate_forward(cylinder2)
+            cylinder3 = self.rotate_forward(cylinder3)
+
+        return ciphertext
 
     # TODO decryption function
+
+    def decrypt(self, ciphertext: str, key: str):
+        plaintext = ""
+
+        cylinder1, offset1 = self.configure_rotor(self.rotors[0], key[0])
+        cylinder2, offset2 = self.configure_rotor(self.rotors[1], key[1])
+        cylinder3, offset3 = self.configure_rotor(self.rotors[2], key[2])
+
+        for letter in ciphertext:
+            if letter == " ":
+                plaintext += letter
+                continue
+
+            value_c3 = alpha_to_value.get(letter)
+            value_c2 = cylinder3.index(value_c3)        # search value in cylinder 3, take index
+            value_c1 = cylinder2.index(value_c2)        # use index to search in cylinder 2
+            valueofLetter = cylinder1.index(value_c1)   # use index to search in cylinder 1
+            plaintext += value_to_alpha.get(valueofLetter)   # index is the original letter
+
+            cylinder1 = self.rotate_forward(cylinder1)
+            cylinder2 = self.rotate_forward(cylinder2)
+            cylinder3 = self.rotate_forward(cylinder3)
+
+        return plaintext
 
     """
     implementation details should be the opposite of encryption
@@ -143,6 +192,10 @@ list_of_rotors= [rotor_1,rotor_2,rotor_3]
 # Test Rotor Machine
 # RotorMachine(list_of_rotors,"CAB")
 
-
-
-
+if __name__ == "__main__":
+    machine = RotorMachine(list_of_rotors, "CAB")
+    print("Key: CAB")
+    for message in ["HOPE", "HELLO", "NEW YEAR"]:
+        encrypted = machine.encrypt(message, "CAB")
+        decrypted = machine.decrypt(encrypted, "CAB")
+        print(message, "->", encrypted, "->", decrypted)
