@@ -37,6 +37,8 @@ shifts_per_round = [ 1, 1, 2, 2,
                      2, 2, 2, 2,
                      1, 2, 2, 2,
                      2, 2, 2, 1]
+
+# TODO S-boxes
 #-----------------------------------
 
 # Helper Functions------------------
@@ -64,18 +66,82 @@ def permutation(block : str,table: list,bits):
 
 #----------------------------------------
 
-# TODO Step 1 permutation of plaintext using initial 8x8 64 bit permutation table
 
+"""DES Class
+Parameter:
 
-
-
-# Step 2 initial process of 64-bit key
 """
-Need to take out 8 parity bits
-Using PC-1 table
-Split remaining 56 bits in half 28 bits
-create 16 subkeys by using PC-2 table
-"""
+class DES:
+    def __init__(self, key :str):
+        # Step 1 generate subkeys
+        self.subkeys_list = Key(key).subkeys()
+
+
+    def __pt_padding(self,text: str):
+        # parse spaces/ should they be removed or used as part of the text to be encrypted?
+        parsed_text = text.replace(" ", "")
+        #encode so we can pad plaintext
+        encoded_pt = parsed_text.encode("utf-8")
+        # pad pt if needed
+        bytes_needed = len(encoded_pt)
+        # inputs in project are not longer than 8 bytes should add case later
+        if len(encoded_pt) < 8:
+            encoded_pt = encoded_pt.ljust(8, b'\x00')
+        padded_pt = encoded_pt.hex()
+        # blocks: list = [encoded_pt[i: i + 16] for i in range(0, len(padded_hex_pt), 8)]
+        # to binary
+
+        return hex_to_bin(padded_pt)
+
+    """
+    16 rounds of encryption
+    divide plaintext into two 64 Bit size blocks main/final key 56 bits long
+
+    key[i] where i is current round is a permutation or a split of original 56 length key after removing parity bits
+
+    alternate substitution and permutation techniques
+    """
+    def __feistel_rounds(self,hex_string: str,subkeys: list):
+        # Initial permutation
+        block = permutation(hex_string, IP_table, 64)
+
+        # Split block in half
+        LE = block[0:16]
+        RE = block[16:64]
+        """ 
+        right block is expanded up to 48 bits
+
+        applied a permutation or a substitution technique (start with permutation) using a 
+        permutation/slice of 56 bit key generated, they should alternate. Use mod 2 == 0 to know when round is even
+        """
+
+        for i in range(16):
+            # ask for key for this round = key[i]
+            # apply permutation or substitution using key[i] starting with permutation on round 1
+            # right side for next round becomes xor operation of the result string from the right after function and Left side of plaintext
+            # left side for next round will be original right( before function)
+
+            LE = RE
+            RE = LE
+
+    def test(self,plaintext: str):
+        block = self.__pt_padding(plaintext)
+        print(permutation(hex_to_bin(block),IP_table,64))
+        # self.__feistel_rounds(block,self.subkeys_list)
+
+
+    def encrypt(self,plaintext :str):
+        # Step 2 permutation of plaintext using initial 8x8 64 bit permutation table
+        permutated_pt = self.__pt_padding(plaintext)
+        # Step 3 Feistel Rounds
+        self.__feistel_rounds(permutated_pt,self.subkeys_list)
+
+
+    def decrypt(self,ciphertext :str):
+        # Step 2 if encrypted with this algorithm should already be appropriate length
+        permutated_pt = self.__pt_padding(ciphertext)
+        # Step 3 Feistel Rounds
+
 
 """ Key class
 Parameters:
@@ -136,38 +202,15 @@ class Key:
         return subkeys_list
 
 # Key generation test-------
-valid_key = "133759BBC356F11D"
-invalid_key = "23F"
-subkeys = Key(valid_key).subkeys()
-count = 1
-for s in subkeys:
-    print(s,count)
-    count += 1
-# ---------------------------
+# valid_key = "133759BBC356F11D"
+# invalid_key = "23F"
+# subkeys = Key(valid_key).subkeys()
+# count = 1
+# for s in subkeys:
+#     print(s,count)
+#     count += 1
 
-
-# TODO Feistel structure
-"""
-16 rounds of encryption
-divide plaintext into two 64 Bit size blocks main/final key 56 bits long
-
-key[i] where i is current round is a permutation or a split of original 56 length key after removing parity bits
-
-alternate substitution and permutation techniques
-"""
-
-# LOOP range 16 O(16)-> O(1)
-# ask for key for this round = key[i]
-# apply permutation or substitution using key[i] starting with permutation on round 1
-# right side for next round becomes xor operation of the result string from the right after function and Left side of plaintext
-# left side for next round will be original right( before function)
-
-""" 
-right block is expanded up to 48 bits
-
-applied a permutation or a substitution technique (start with permutation) using a 
-permutation/slice of 56 bit key generated, they should alternate. Use mod 2 == 0 to know when round is even
-"""
-
+# Padding and IP test-----------
+# DES("AABB09182736CCDD").test("HELLO")
 
 
