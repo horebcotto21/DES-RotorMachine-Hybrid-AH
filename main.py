@@ -32,8 +32,7 @@ for message in messages:
     t.join()
     print(" ", message, "time (ms):", round((end - start) / 1000 * 1000, 4))
     print("Avg CPU %:", f"{sum(cpu_samples) / len(cpu_samples):3f}\n")
-# TODO DES: same as above, using DES
-print("DES algorithm")
+print("DES algorithm\n")
 for message in messages:
     start = time.perf_counter()
     stop_flag = False
@@ -48,4 +47,25 @@ for message in messages:
     t.join()
     print(" ", message, "time (ms):", round((end - start) / 1000 * 1000, 4))
     print("Avg CPU %:", f"{sum(cpu_samples) / len(cpu_samples):3f}\n")
-# TODO Hybrid: same as above, rotor machine + DES
+
+print("Hybrid Rotor + DES\n")
+long_messages = ["HOW ARE YOU", "HAPPY NEW YEAR", "WELCOME TO PUERTO RICO"]
+
+for message in long_messages:
+    start = time.perf_counter()
+    stop_flag = False
+    t = threading.Thread(target=monitor_cpu)
+    t.start()
+    for i in range(1000):
+        encrypted = rotor.encrypt(message, "CAB")
+        encrypted_2 = DES("1337BACEF18CC54D").encrypt(encrypted)
+        decrypted = DES("1337BACEF18CC54D").decrypt(encrypted_2)
+        decrypted_2 = rotor.decrypt(decrypted, "CAB")
+
+    print("encrypted: ", encrypted,"-> decryption: ",decrypted_2)
+    end = time.perf_counter()
+    cpu_util_end = perf_counter()
+    stop_flag = True
+    t.join()
+    print(" ", message, "time (ms):", round((end - start) / 1000 * 1000, 4))
+    print("Avg CPU %:", f"{sum(cpu_samples) / len(cpu_samples):3f}\n")
