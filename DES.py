@@ -133,6 +133,7 @@ def bin2hex(s):
         ch = ch + s[i + 3]
         hex = hex + mp[ch]
 
+
     return hex
 
 #from
@@ -223,6 +224,12 @@ class DES:
         # to binary
 
         return padded_pt
+
+    def __unpadding(self,text : str):
+        while text.endswith("00"):
+            text = text[:-2]
+        return text
+
 
 
     def __feistel_rounds(self,LE, RE,encryption: bool):
@@ -316,7 +323,11 @@ class DES:
         # Step 3 Feistel Rounds
         final_combine = self.__feistel_rounds(LE,RE,False)
         plaintext = permutation(final_combine, FP_table,64)
-        return bin2hex(plaintext)
+        hex_string = self.__unpadding(bin2hex(plaintext))
+        # print(hex_string,self.__unpadding(hex_string))
+        stripped = bytearray.fromhex(self.__unpadding(bin2hex(plaintext))).decode()
+
+        return stripped
 
 
 
@@ -384,34 +395,34 @@ class Key:
 #     count += 1
 
 # Padding and IP test-----------
-plaintext = "HELLO"
-encoded_pt = plaintext.encode("utf-8")
-if len(encoded_pt) < 8:
-    encoded_pt = encoded_pt.ljust(8, b'\x00')
-padded_pt = encoded_pt.hex().upper()
-# print("pt",plaintext,padded_pt  )
-ciphertext =DES("AABB09182736CCDD").encrypt("HELLO")
-print("pt",plaintext,"ciphertext", ciphertext)
-pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-print("decryption",pt)
-
-plaintext = "HOPE"
-ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
-print("pt",plaintext, "ciphertext", ciphertext)
-pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-print("decryption",pt)
-
-
-plaintext = "NEW YEAR"
-ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
-print("pt",plaintext, "ciphertext", ciphertext)
-pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-print("decryption",pt)
-
-plaintext = "HOW ARE YOU"
-ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
-print("pt",plaintext,len(plaintext), "ciphertext", ciphertext)
-pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-print("decryption",pt)
+# plaintext = "HELLO"
+# encoded_pt = plaintext.encode("utf-8")
+# if len(encoded_pt) < 8:
+#     encoded_pt = encoded_pt.ljust(8, b'\x00')
+# padded_pt = encoded_pt.hex().upper()
+# # print("pt",plaintext,padded_pt  )
+# ciphertext =DES("AABB09182736CCDD").encrypt("HELLO")
+# print("pt",plaintext,"ciphertext", ciphertext)
+# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
+# print("decryption",pt)
+#
+# plaintext = "WUHJ"
+# ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
+# print("pt",plaintext, "ciphertext", ciphertext)
+# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
+# print("decryption",pt,len(pt), len(plaintext))
+#
+#
+# plaintext = "NEW YEAR"
+# ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
+# print("pt",plaintext, "ciphertext", ciphertext)
+# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
+# print("decryption",pt)
+#
+# plaintext = "HOW ARE YOU"
+# ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
+# print("pt",plaintext,len(plaintext), "ciphertext", ciphertext)
+# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
+# print("decryption",pt)
 
 
