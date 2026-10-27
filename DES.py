@@ -136,14 +136,21 @@ def bin2hex(s):
 
     return hex
 
-#from
+
 def bin_to_dec(binary: str):
     return int(binary,2)
+
 # doesnt work
 def dec_to_bin(decimal: int):
     return bin(int(decimal, 16))[2:].zfill(len(decimal) * 4).encode()
+
 #from geeksforgeeks Author: Aditya Jain
 def dec2bin(num):
+    """Convert a decimal number to binary sequence
+
+    :param num: an integer
+    :return: a string with a binary sequence
+    """
     res = bin(num).replace("0b", "")
     if len(res) % 4 != 0:
         div = len(res) / 4
@@ -155,6 +162,14 @@ def dec2bin(num):
 
 
 def xor_operation(bin1: str, bin2: str) -> str:
+    """Performs XOR operation on two binary strings
+    if both have the same value (1,1) or (0,0) in position i becomes 0
+    if they have different values (1,0) or (0,1) in position i becomes 1
+
+    :param bin1: a string with a binary sequence
+    :param bin2: a string with a binary sequence
+    :return: a string with a binary sequence
+    """
     xor = ""
     # a and b must have same length
     for i in range(len(bin1)):
@@ -166,15 +181,14 @@ def xor_operation(bin1: str, bin2: str) -> str:
 
 
 # Core cryptographic techniques--------
-""" Permutation Function
-Parameters:
-    block : str - string that will be permutated using a table from Data section
-    table : list - a sequence of numbers used for permutation
-    bits : int - how many bits does the result need to have
-Returns:
-    permutated_block : str - block that passed through permutation table 
-"""
 def permutation(block : str,table: list,bits):
+    """ Applies diffusion to the binary sequence using specified table
+
+    :param block: string that will be permutated using a table from Data section
+    :param table: a sequence of numbers used for permutation
+    :param bits: how many bits does the result need to have
+    :return: block that passed through permutation table
+    """
     # block is a binary string
     permutated_block = ""
     for i in range(0,bits):
@@ -182,8 +196,13 @@ def permutation(block : str,table: list,bits):
     return permutated_block
 
 
-# Substitution function using eight S‑boxes
 def substitution(block : str):
+    """ Substitution function using eight S‑boxes
+    Applies confusion to input
+
+    :param block: a string containing a binary sequence
+    :return:
+    """
     subs_text = ""
     for sbox in range(0,8):
         row = bin_to_dec(block[sbox * 6] + block[sbox * 6 + 5] )
@@ -204,10 +223,10 @@ class DES:
 
 
     def __pt_padding(self,text: str):
-        """ Parses (removes spaces) Pads plaintext if it does not meet size requirements
+        """ Pads plaintext if it does not meet size requirements (too small)
 
-        :param text -
-        :return -
+        :param text: string to be padded
+        :return: padded string in hex format
         """
         # parse spaces/ should they be removed or used as part of the text to be encrypted?
         # parsed_text = text.replace(" ", "")
@@ -226,6 +245,11 @@ class DES:
         return padded_pt
 
     def __unpadding(self,text : str):
+        """Unpads text in parameter (removes trailing nulls)
+
+        :param text: hex string to be unpadded
+        :return: unpadded string in hex format
+        """
         while text.endswith("00"):
             text = text[:-2]
         return text
@@ -233,12 +257,13 @@ class DES:
 
 
     def __feistel_rounds(self,LE, RE,encryption: bool):
-        """16 rounds of encryption
+        """ Perform DES algorithm
+        16 rounds of encryption
 
         :param LE - left side of block
         :param RE - right side of block
         :param encryption - whether encryption or decryption is going to be executed
-        :return - returns hexadecimal version of encryption
+        :return - returns binary version of encryption
         """
         for i in range(16):
             # Round 1
@@ -250,24 +275,14 @@ class DES:
                 xored = xor_operation(expanded_RE, self.subkeys_list[i])
             else:
                 xored = xor_operation(expanded_RE, self.inv_subkeys_list[i])
-            # if i == 0:
-            #     print("round", i, "exp right", bin2hex(expanded_RE))
-                # print("xor", bin2hex(xored))
-            # print("key round ", i, bin2hex(self.subkeys_list[i]))
             # substitution through all 8 sboxes
             sboxed = substitution(xored)
 
             # Straight permutation
             sp = permutation(sboxed, SP_table, 32)
-            # if i==0:
-            #     print("sboxed", bin2hex(sboxed))
-            #     print("straigth perm", bin2hex(sp))
             # XOR left with result of function
             processed = xor_operation(LE, sp)
-            # if i==0:
-            #     print("result ", bin2hex(processed))
             LE = processed
-
 
             # last round is different
             if i != 15:
@@ -279,6 +294,12 @@ class DES:
 
 
     def encrypt(self,plaintext :str):
+        """Calls padding function,applies initial permutation, splits block in two
+        If plaintext is bigger than 8 bytes divides into 8 byte sized blocks and recursively calls encrypt method
+
+        :param plaintext: text to be encrypted
+        :return: string in hex format
+        """
         #Step 1 prepare plaintext
         # pad text returns in binary
         if len(plaintext) > 8:
@@ -286,26 +307,29 @@ class DES:
             ciphertext : str = ""
             for block in blocks:
                 temp = self.encrypt(block)
-                # print("block",temp)
                 ciphertext = ciphertext + temp
             return ciphertext
-
+        # Step 2
+        # Pad
         padded_pt = self.__pt_padding(plaintext)
-        # print(padded_pt)
-        # IP of pt
+        # Initial Permutation of pt
         ip_pt = permutation(hex_to_bin(padded_pt), IP_table, 64)
-        # print("IP", bin2hex(ip_pt))
         # Split into blocks of the same size
         LE = ip_pt[0:32]
         RE = ip_pt[32:64]
         # Step 3 Feistel Rounds
         final_combine = self.__feistel_rounds(LE,RE,True)
-        # print("combine", bin2hex(final_combine))
         ciphertext = permutation(final_combine, FP_table,64)
         return bin2hex(ciphertext)
 
 
     def decrypt(self,ciphertext :str):
+        """ Applies initial permutation to ciphertext, splits block in two
+        If plaintext is bigger than 8 bytes divides into 8 byte sized blocks and recursively calls decrypt method
+
+        :param ciphertext: string in hex format
+        :return: string in ASCII format
+        """
         # assume ciphertext is in hexadecimal format
         # Step 2 if encrypted with this algorithm should already be appropriate length
         if len(ciphertext) > 16:
@@ -313,9 +337,9 @@ class DES:
             plaintext : str = ""
             for block in blocks:
                 temp = self.decrypt(block)
-                # print("block", block, temp)
                 plaintext = plaintext + temp
             return plaintext
+        # no padding necessary is in hex format
         # padded_pt = self.__pt_padding(ciphertext)
         ip_pt = permutation(hex_to_bin(ciphertext), IP_table, 64)
         LE = ip_pt[0:32]
@@ -323,8 +347,6 @@ class DES:
         # Step 3 Feistel Rounds
         final_combine = self.__feistel_rounds(LE,RE,False)
         plaintext = permutation(final_combine, FP_table,64)
-        hex_string = self.__unpadding(bin2hex(plaintext))
-        # print(hex_string,self.__unpadding(hex_string))
         stripped = bytearray.fromhex(self.__unpadding(bin2hex(plaintext))).decode()
 
         return stripped
@@ -333,6 +355,10 @@ class DES:
 
 class Key:
     def __init__(self, key: str):
+        """ Generates subkeys
+
+        :param key: 64-bit hex key
+        """
         # validate
         if self.validate(key):
             self.key = key
@@ -342,6 +368,12 @@ class Key:
             self.key = "1337BACEF18CC54D"
 
     def __shift_subkey(self,subkey: str,amount: int):
+        """Shifts left the subkey a number of times, specified by amount parameter
+
+        :param subkey: no parity bit 56-bit key
+        :param amount: how many left shifts are needed
+        :return: a binary sequence in a string
+        """
         shift = ""
         for i in range(0,amount):
             for j in range(1,len(subkey)):
@@ -352,6 +384,11 @@ class Key:
         return subkey
 
     def validate(self,key) -> bool:
+        """ Checks that the key is right length and contains no non-hex value
+
+        :param key: original 64-bit hex key
+        :return: boolean
+        """
         if len(key) != 16:
             return False
         try:
@@ -361,68 +398,24 @@ class Key:
         return True
 
     def subkeys(self) -> list:
-        # create keys for the 16 rounds of encryption/dedcryption
+        """ Create keys for the 16 rounds of encryption/decryption
 
+        :return: list of subkeys in order for encryption
+        """
         # convert key to binary
         bin_key = hex_to_bin(self.key)
         # remove parity bits
         no_parity_key = permutation(bin_key, PC1_table, 56)
-        # print("IP key", bin2hex(no_parity_key))
         # split in half
         left = no_parity_key[0:28]
         right = no_parity_key[28:56]
-        # print("left", left, "right", right)
         subkeys_list = []
         for i in range(0,16):
             # shift operations based on round
             left = self.__shift_subkey(left,shifts_per_round[i])
             right = self.__shift_subkey(right,shifts_per_round[i])
-            # if i==0:
-            #     print(left,right)
-            #     print(bin2hex(left),bin2hex(right))
             combine = left + right
             subkey = permutation(combine, PC2_table, 48)
             subkeys_list.append(subkey)
         return subkeys_list
-
-# Key generation test-------
-# valid_key = "133759BBC356F11D"
-# invalid_key = "23F"
-# subkeys = Key(valid_key).subkeys()
-# count = 1
-# for s in subkeys:
-#     print(s,count)
-#     count += 1
-
-# Padding and IP test-----------
-# plaintext = "HELLO"
-# encoded_pt = plaintext.encode("utf-8")
-# if len(encoded_pt) < 8:
-#     encoded_pt = encoded_pt.ljust(8, b'\x00')
-# padded_pt = encoded_pt.hex().upper()
-# # print("pt",plaintext,padded_pt  )
-# ciphertext =DES("AABB09182736CCDD").encrypt("HELLO")
-# print("pt",plaintext,"ciphertext", ciphertext)
-# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-# print("decryption",pt)
-#
-# plaintext = "WUHJ"
-# ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
-# print("pt",plaintext, "ciphertext", ciphertext)
-# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-# print("decryption",pt,len(pt), len(plaintext))
-#
-#
-# plaintext = "NEW YEAR"
-# ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
-# print("pt",plaintext, "ciphertext", ciphertext)
-# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-# print("decryption",pt)
-#
-# plaintext = "HOW ARE YOU"
-# ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
-# print("pt",plaintext,len(plaintext), "ciphertext", ciphertext)
-# pt = DES("AABB09182736CCDD").decrypt(ciphertext)
-# print("decryption",pt)
-
 
