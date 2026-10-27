@@ -199,6 +199,7 @@ class DES:
     def __init__(self, key :str):
         # Step 1 generate subkeys
         self.subkeys_list = Key(key).subkeys()
+        self.inv_subkeys_list = self.subkeys_list[::-1]
 
 
     def __pt_padding(self,text: str):
@@ -218,13 +219,13 @@ class DES:
             encoded_pt = encoded_pt.ljust(8, b'\x00')
         padded_pt = encoded_pt.hex()
         # for pt longer than 8 bytes
-        # blocks: list = [encoded_pt[i: i + 16] for i in range(0, len(padded_hex_pt), 8)]
+
         # to binary
 
         return padded_pt
 
 
-    def __feistel_rounds(self,LE, RE):
+    def __feistel_rounds(self,LE, RE,encryption: bool):
         """16 rounds of encryption
 
         :param LE - left side of block
@@ -238,7 +239,10 @@ class DES:
             expanded_RE = permutation(RE, d_box, 48)
 
             # XOR with key for this round
-            xored = xor_operation(expanded_RE, self.subkeys_list[i])
+            if encryption:
+                xored = xor_operation(expanded_RE, self.subkeys_list[i])
+            else:
+                xored = xor_operation(expanded_RE, self.inv_subkeys_list[i])
             # if i == 0:
             #     print("round", i, "exp right", bin2hex(expanded_RE))
                 # print("xor", bin2hex(xored))
@@ -270,6 +274,15 @@ class DES:
     def encrypt(self,plaintext :str):
         #Step 1 prepare plaintext
         # pad text returns in binary
+        if len(plaintext) > 8:
+            blocks: list = [plaintext[i: i + 8] for i in range(0, len(plaintext), 8)]
+            ciphertext : str = ""
+            for block in blocks:
+                temp = self.encrypt(block)
+                # print("block",temp)
+                ciphertext = ciphertext + temp
+            return ciphertext
+
         padded_pt = self.__pt_padding(plaintext)
         # print(padded_pt)
         # IP of pt
@@ -279,7 +292,7 @@ class DES:
         LE = ip_pt[0:32]
         RE = ip_pt[32:64]
         # Step 3 Feistel Rounds
-        final_combine = self.__feistel_rounds(LE,RE)
+        final_combine = self.__feistel_rounds(LE,RE,True)
         # print("combine", bin2hex(final_combine))
         ciphertext = permutation(final_combine, FP_table,64)
         return bin2hex(ciphertext)
@@ -287,14 +300,21 @@ class DES:
 
     def decrypt(self,ciphertext :str):
         # assume ciphertext is in hexadecimal format
-        self.subkeys_list = self.subkeys_list[::-1]
         # Step 2 if encrypted with this algorithm should already be appropriate length
+        if len(ciphertext) > 16:
+            blocks: list = [ciphertext[i: i + 16] for i in range(0, len(ciphertext), 16)]
+            plaintext : str = ""
+            for block in blocks:
+                temp = self.decrypt(block)
+                # print("block", block, temp)
+                plaintext = plaintext + temp
+            return plaintext
         # padded_pt = self.__pt_padding(ciphertext)
         ip_pt = permutation(hex_to_bin(ciphertext), IP_table, 64)
         LE = ip_pt[0:32]
         RE = ip_pt[32:64]
         # Step 3 Feistel Rounds
-        final_combine = self.__feistel_rounds(LE,RE)
+        final_combine = self.__feistel_rounds(LE,RE,False)
         plaintext = permutation(final_combine, FP_table,64)
         return bin2hex(plaintext)
 
@@ -387,4 +407,11 @@ ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
 print("pt",plaintext, "ciphertext", ciphertext)
 pt = DES("AABB09182736CCDD").decrypt(ciphertext)
 print("decryption",pt)
+
+plaintext = "HOW ARE YOU"
+ciphertext =DES("AABB09182736CCDD").encrypt(plaintext)
+print("pt",plaintext,len(plaintext), "ciphertext", ciphertext)
+pt = DES("AABB09182736CCDD").decrypt(ciphertext)
+print("decryption",pt)
+
 
