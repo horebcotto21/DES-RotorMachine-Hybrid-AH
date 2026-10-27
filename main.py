@@ -62,7 +62,7 @@ for message in long_messages:
         decrypted = DES("1337BACEF18CC54D").decrypt(encrypted_2)
         decrypted_2 = rotor.decrypt(decrypted, "CAB")
 
-    print("encrypted: ", encrypted,"-> decryption: ",decrypted_2)
+    print("E1: ", encrypted,"-> E2",encrypted_2, "-> D1: ",decrypted,"-> D2: ",decrypted_2)
     end = time.perf_counter()
     cpu_util_end = perf_counter()
     stop_flag = True
